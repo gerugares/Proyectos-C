@@ -1,0 +1,514 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#define MINAS -1
+#define BANDERA 2
+#define INTERROGACION 3
+#define CUBIERTA 1
+#define DESCUBIERTA 0
+#define TAM 20
+
+//NUMERO DE OPERACIONES PARA UNA CASILLA.
+#define NUM_OP 3
+int configuraciondimension();
+int configuracionminas(int);
+int descubrirCasilla(int[][TAM],int[][TAM],int,int,int);
+void colocarMinas(int minas,int dim,int panelInterno[][TAM]);
+void inicializarPaneles(int dim,int panelInterno[][TAM],int panelExterno[][TAM]);
+void mostrarPanel(int dim,int panelInterno[][TAM]);
+void calcularMinas(int dim,int panelInterno[][TAM],const int REGLAS[]);
+void mostrarPanelPantalla(int dim,int panelExterno[][TAM],int panelInterno[][TAM]);
+int pedirCoordenada(int dim);
+int mostrarOperacionesDisponibles();
+int EjecutarOperacionesDisponibles(int op , int dim, int* min, int pInt[][TAM], int pExt[][TAM], int x, int y, int* casillasDescubiertas);
+
+
+int main()
+{
+    int opcion,operacion, error;
+    int dimension,x,y, minas = -1, finJuego, casillasDescubiertas;
+    int panelInterno[TAM][TAM], panelExterno[TAM][TAM];
+
+    ///LOS ÍNDICES PARES DE ESTE VECTOR SE LES SUMAN A LA I, Y LOS ÍNDICES IMPARES SE LE SUMAN A LA J
+    const int REGLAS[]= {0,1,1,1,1,0,1,-1,0,-1,-1,-1,-1,0,-1,1};
+    ///crear semilla
+    int seed = (unsigned)time(NULL);
+    ///generar semilla
+    srand(seed);
+
+    ///BUCLE DEL MENÚ PRINCIPAL. SOLO PARA CUANDO SE ELIJA LA OPCIÓN SALIR.
+    ///SI SE TERMINA "EL JUEGO" SE VUELVE A MOSTRAR ESTE MENÚ.
+    do
+    {
+        error = 0;
+        printf("\n\n-----------------------MENU PRINCIPAL---------------------------\n\n");
+        printf("----------------------------------------------------------------\n\n");
+        printf("\n1.Configuracion del juego");
+        printf("\n2.Empezar el juego");
+        printf("\n3.Salir\n");
+        printf("\nPor favor, elija opcion: ");
+
+        ///NOS ASEGURAMOS DE QUE LA OPCION ELEGIDA del menú principal, ES CORRECTA.
+        do
+        {
+            scanf("%d",&opcion);
+            fflush(stdin);
+            if(opcion<1||opcion>3)
+            {
+                printf("\n\n Opcion erronea. Vuelva a intentarlo:");
+                error = 1;
+            }
+            else
+                error=0;
+
+        }
+        while(error);
+        /// una vez que la opcion es correcta.....
+
+        switch(opcion)
+        {
+        ///CONFIGURAR JUEGO...
+        case 1:
+            ///actualizamos controles del proyecto.
+            casillasDescubiertas = 0, finJuego=0;
+            dimension =  configuraciondimension();
+            inicializarPaneles(dimension,panelInterno,panelExterno);
+            minas= configuracionminas(dimension);
+            colocarMinas(minas,dimension,panelInterno);
+            calcularMinas(dimension,panelInterno,REGLAS);
+
+            break;
+
+        ///COMIENZO DEL JUEGO.
+        case 2:
+            ///si el juego está configurado, se comienza;
+            if(minas!= -1)
+            {
+                ///Si ya está configurado el juego,comenzamos
+                printf("\n\n-------------------------   COMENZA EL JUEGO !!!!! ---------------\n\n");
+                do
+                {
+                    ///prueba. mostramos el panel con las minas para probar el proyecto....
+                    printf("\n\n --------- NUESTRO PANEL INTERNO -------------\n\n");
+                    mostrarPanel(dimension,panelInterno);
+                    printf("\n\n ---------- NUESTRO PANEL EXTERNO ---------\n\n");
+                    mostrarPanel(dimension,panelExterno);
+                    ///fin pruebas.....
+                    printf("\n\n ---------- NUESTRO PANEL DE JUEGO  ---------\n\n");
+                    mostrarPanelPantalla(dimension,panelExterno,panelInterno);
+                    printf("\n\nMINAS A DESCUBRIR: %d\n\n", minas);
+                    printf("\n\n CASILLAS DESCUBIERTAS: %d\n\n", casillasDescubiertas);
+                    printf("\nPor favor, introduzca la coordenada x:\n ");
+                    x=pedirCoordenada(dimension);
+                    printf("\nPor favor, introduzca la coordenada y:\n");
+                    y=pedirCoordenada(dimension);
+                    operacion=mostrarOperacionesDisponibles();
+                    /** Necesitamos utilizar un puntero para ir actualizando la variable casillasDescubiertas que controla
+                        el main
+                    */
+
+                    ///En el caso de que se devuelva un 1, significa que se ha pisado una mina (PERDER!!)
+                    finJuego = EjecutarOperacionesDisponibles(operacion, dimension, &minas,
+                                    panelInterno, panelExterno, x, y, &casillasDescubiertas);
+
+                    ///GANAR....
+                    if( casillasDescubiertas == dimension * dimension - minas)
+                    {
+                        finJuego = 1;
+                        printf("\n\n HA GANADO\n");
+                        mostrarPanel(dimension,panelInterno);
+                    }
+
+
+                }
+                while(finJuego == 0);
+                ///SI SE HA FINALIZADO EL JUEGO , HAY QUE PASAR NECESARIAMENTE POR LA CONFIGURACION
+                /// DE NUEVO.
+                if(finJuego==1){
+                    minas=-1;
+                }
+
+
+                ///SI EL JUEGO HA TERMINADO, bien porque se pisa mina o bien porque se gana, paramos
+                /// el bucle del juego y ACTUALIZAMOS LOS CONTROLES.
+
+            }
+            ///si el juego NO está configurado...
+            else
+
+            {
+
+                printf("\n\n DEBE CONFIGURAR EL JUEGO!!!!!\n\n");
+            }
+
+            break;
+
+            ///SALIR DEL MENU PRINCIPAL.
+        case 3:
+
+            printf("\n\nHA DECIDIDO ABANDONAR EL JUEGO\n\n");
+        }
+
+        ///REPETIMOS EL MENU PRINCIPAL MIENTRAS SE ELIJAN LAS OPCIONES [1,2]. Solamente
+        ///parará cuando se elija la opción 3, incluso si se ha perdido una partida, se volverá
+        /// a mostrar el menú principal.
+    }
+    while( (opcion > 0 && opcion < 3) );
+
+
+    return 0;
+}
+
+
+//---------------------------------------------FUNCIONES / PROCEDIMIENTOS -------------------
+//-------------------------------------------------------------------------------------------
+
+
+int configuraciondimension()
+{
+    int dimension;
+    printf("\nIntroduzca la dimension del panel:\n");
+    scanf("%d",&dimension);
+    return dimension;
+}
+
+int configuracionminas(int dimension)
+{
+    int minas;
+    int minastotal=(dimension*dimension)-1;
+    do
+    {
+        printf("\nIntroduzca el numero de minas que quiere ubicar en el panel (max %d):\n",minastotal);
+        scanf("%d",&minas);
+
+
+    }
+    while(minas < 1 || minas > minastotal);
+
+    return minas;
+}
+
+
+int descubrirCasilla(int panelInterno[][TAM],int panelExterno[][TAM],int dimension,int x,int y)
+{
+    int i,j,casillasDescubiertas=1;
+    panelExterno[x][y]=DESCUBIERTA;
+    if(panelInterno[x][y]==0)
+    {
+        for (i=x-1; i<=x+1; i++)
+            for(j=y-1; j<=y+1; j++)
+                if (i>=0 && i<dimension && j>=0 && j<dimension && panelExterno[i][j]==CUBIERTA)
+                    casillasDescubiertas+=descubrirCasilla(panelInterno,panelExterno,dimension,i,j);
+    }
+    return casillasDescubiertas;
+}
+
+void colocarMinas(int minas,int dim,int panelInterno[][TAM])
+{
+    int i,x,y;
+    for(i=0; i<minas; i++)
+    {
+        x= rand()%dim;
+        y=rand()%dim;
+
+        if(panelInterno[x][y]!=MINAS)
+        {
+            panelInterno[x][y]=MINAS;
+        }
+        else
+            i--;
+    }
+
+}
+
+
+void inicializarPaneles(int dim,int panelInterno[][TAM],int panelExterno[][TAM])
+{
+    int i,j;
+    for(i=0; i<dim; i++)
+    {
+
+        for(j=0; j<dim; j++)
+        {
+            panelInterno[i][j]=DESCUBIERTA;
+            panelExterno[i][j]=CUBIERTA;
+        }
+
+    }
+}
+
+void mostrarPanel(int dim,int panelInterno[][TAM])
+{
+    int i,j;
+    printf("\n\n");
+    for(i=0; i<dim; i++)
+    {
+        for(j=0; j<dim; j++)
+        {
+            printf("%d\t",panelInterno[i][j]);
+        }
+
+        printf("\n\n");
+    }
+    printf("\n\n");
+}
+
+void calcularMinas(int dim,int panelInterno[][TAM],const int REGLAS[])
+{
+    int i,j,cont1,cont2,coord1,coord2;
+
+    for(i=0; i<dim; i++)
+    {
+        for(j=0; j<dim; j++)
+        {
+            if(panelInterno[i][j]==MINAS)
+            {
+                //RECORREMOS EL PANEL INTERNO Y SÓLO EN EL CASO DE QUE ENCONTREMOS UNA MINA INCREMENTAMOS EN 1,EL VALOR DE LAS 8 CASILLAS DE SU ALREDEDOR
+                for(cont1=0,cont2=1; cont1<16; cont1+=2,cont2+=2)
+                {
+                    coord1=i+REGLAS[cont1];
+                    coord2=j+REGLAS[cont2];
+                    if(coord1>=0&& coord2>=0 && coord1<dim &&coord2<dim && panelInterno[coord1][coord2]!=MINAS)
+                    {
+                        panelInterno[coord1][coord2]++;
+
+                    }
+
+                }
+
+
+            }
+
+        }
+
+
+    }
+}
+
+
+void mostrarPanelPantalla(int dim,int panelExterno[][TAM], int panelInterno[][TAM])
+{
+    int i,j;
+    for(i=0; i<dim; i++)
+    {
+        for(j=0; j<dim; j++)
+        {
+            if(panelExterno[i][j]==CUBIERTA)
+            {
+                printf("%c\t",178);
+            }
+
+            else if(panelExterno[i][j]==DESCUBIERTA)
+            {
+                printf("%d\t",panelInterno[i][j]);
+            }
+            else if(panelExterno[i][j]==BANDERA)
+            {
+
+                printf("%c\t",66);
+            }///EN EL PANEL EXTERNO SOLAMENTE HAY 4 ESTADOS (0,1,2,3)
+            else
+                printf("%c\t",63);
+
+
+        }
+
+        printf("\n\n");
+
+    }
+}
+
+int pedirCoordenada(int dim)
+{
+    int coord,error;
+    do
+    {
+        scanf( "%d",&coord);
+        //limpiar el bufer del teclado(standard input. todo lo que entra por teclado lo limpia.
+        fflush(stdin);
+        coord --;
+        if(coord<0 || coord> dim-1)
+        {
+            error=1;
+            printf("Error.Vuelva a intentarlo\n");
+        }
+        else
+            error=0;
+
+
+    }
+    while ( error==1 );
+    return coord;
+
+
+
+}
+
+
+int mostrarOperacionesDisponibles()
+{
+    int opcion,error;
+    do
+    {
+        printf("\n\n1. DESCUBRIR LA CASILLA\n\n");
+        printf("2. PONER / QUITAR BANDERA\n\n");
+        printf("3.PONER / QUITAR INTERROGACION\n\n");
+        printf("Elija una opcion:");
+        scanf("%d",&opcion);
+        fflush(stdin);
+        if(opcion<0 || opcion>NUM_OP)
+        {
+            printf("Opcion erronea.Vuelva a intentarlo\n");
+            error=1;
+        }
+        else
+            error=0;
+        ///CONTROLAMOS QUE LA OPCION SEA CORRECTA Y ESTE DENTRO DEL INTERVALO [1,3]
+    }
+    while (error==1);
+
+    return opcion;
+
+}
+
+/** Necesitamos utilizar un puntero para ir actualizando la variable casillasDescubiertas que controla
+    el main
+*/
+int EjecutarOperacionesDisponibles(int op , int dim, int* min, int pInt[][TAM], int pExt[][TAM],
+                                    int x, int y, int* casillasDescubiertas)
+{
+
+    int finJuego=0;
+
+    switch(op)
+    {
+    /// DESCUBRIR CASILLA.
+    case 1:
+        ///Permitimos descubrir la casilla, solamente si está cubierta (CUBIERTA / BANDERA / INTERROGACION).
+        if(pExt[x][y] ==  DESCUBIERTA)
+        {
+            printf("\n\nCASILLA YA DESCUBIERTA\n\n");
+
+        }
+        else //if(pExt[x][y] ==  CUBIERTA || pExt[x][y] ==  BANDERA || pExt[x][y] ==  INTERROGACION )
+        {
+            ///si es una mina=> fin juego y se descubre todo el panel
+            if(pInt[x][y] ==  MINAS)
+            {
+                finJuego = 1;
+                printf("\n\n .......... HA PISADO UNA MINA. GAME OVER .....!!!!!! \n");
+                printf("\n\n .......... MOSTRAMOS PANEL DESCUBIERTO!!!!.....!!!!!! \n");
+                mostrarPanel(dim, pInt);
+                printf("\n\n.................GAME OVER !!!!.........................\n");
+            }
+            ///si no es una mina
+            else
+            {
+                ///si no tiene minas alrededor => aplicamos la función recursiva descubrirCasilla (sucesivamente)
+                if(pInt[x][y] == 0)
+                {
+                    (*casillasDescubiertas) = (*casillasDescubiertas) + descubrirCasilla( pInt, pExt, dim, x, y);
+                   // casillasDescubiertas = casillasDescubiertas + descubrirCasilla
+
+                }
+                ///si tiene minas alrededor, se muestra el valor de la casilla (x,y) que son
+                ///el total de minas alrededor => descubrimos la casilla.
+                else if(pInt[x][y]!=0)
+                {
+                    pExt[x][y] = DESCUBIERTA;
+                    (*casillasDescubiertas)++;
+
+                }
+            }
+
+        }
+
+        break;
+
+        ///poner/quitar bandera en (x, y). CONTROLEMOS QUE LA CASILLA NO ESTÉ YA DESCUBIERTA.
+    case 2:
+
+
+        if(pExt[x][y] == DESCUBIERTA)
+        {
+            printf("\n\nCASILLA YA DESCUBIERTA\n\n");
+        }
+        else //if(pExt[x][y] == CUBIERTA || pExt[x][y] == BANDERA || pExt[x][y] == INTERROGACION)
+        {
+            if(pExt[x][y] == CUBIERTA || pExt[x][y] != INTERROGACION)
+            {
+                if(pExt[x][y] != BANDERA)
+                {
+                    pExt[x][y] =  BANDERA;
+                    (*min)--;
+                }
+                else if(pExt[x][y] == BANDERA)
+                {
+                    pExt[x][y] =  CUBIERTA;
+                    (*min)++;
+                }
+                mostrarPanelPantalla(dim, pExt, pInt);
+            }
+        }
+
+        break;
+
+        ///poner/quitar interrogación en (x, y). CONTROLEMOS QUE LA CASILLA NO ESTÉ YA DESCUBIERTA.
+    case 3:
+        if(pExt[x][y] == DESCUBIERTA)
+        {
+            printf("\n\nCASILLA YA DESCUBIERTA\n\n");
+        }
+        else //if(pExt[x][y] == CUBIERTA || pExt[x][y] == BANDERA || pExt[x][y] == INTERROGACION)
+        {
+            if(pExt[x][y] == CUBIERTA || pExt[x][y] != BANDERA)
+            {
+                if(pExt[x][y] != INTERROGACION)
+                {
+                    pExt[x][y] =  INTERROGACION;
+
+                }
+                else if(pExt[x][y] == INTERROGACION)
+                {
+                    pExt[x][y] =  CUBIERTA;
+
+                }
+
+                mostrarPanelPantalla(dim, pExt, pInt);
+            }
+        }
+        break;
+
+
+
+    }//switch operacion
+
+
+return finJuego;
+
+
+}
+
+/*cuando se pulsa la opcion 2.empezar el juego sin haberlo configurado, después de decirte que elija
+una opcion, si pulsas un numero incorrecto, se termina el juego en lugar de decirte"opcion incorrecta, vuelva a intentarlo!"
+despues de elegir una opcion, no se puede seguir jugando??*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
