@@ -90,10 +90,10 @@ int main()
                 do
                 {
                     ///prueba. mostramos el panel con las minas para probar el proyecto....
-                    printf("\n\n --------- NUESTRO PANEL INTERNO -------------\n\n");
-                    mostrarPanel(dimension,panelInterno);
-                    printf("\n\n ---------- NUESTRO PANEL EXTERNO ---------\n\n");
-                    mostrarPanel(dimension,panelExterno);
+                    ///printf("\n\n --------- NUESTRO PANEL INTERNO -------------\n\n");
+                    ///mostrarPanel(dimension,panelInterno);
+                    ///printf("\n\n ---------- NUESTRO PANEL EXTERNO ---------\n\n");
+                    ///mostrarPanel(dimension,panelExterno);
                     ///fin pruebas.....
                     printf("\n\n ---------- NUESTRO PANEL DE JUEGO  ---------\n\n");
                     mostrarPanelPantalla(dimension,panelExterno,panelInterno);
